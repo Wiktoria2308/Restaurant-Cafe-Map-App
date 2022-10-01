@@ -97,6 +97,28 @@ const AuthContextProvider = ({ children }) => {
 		})
 	}
 
+	const setRestaurantPhoto = async ( photo) => {
+		let restaurantUrl = auth.currentUser.restaurantUrl
+
+		if (photo) {
+			const fileRef = ref(storage, `restaurant-photos/${auth.currentUser.email}/${photo.name}`)
+
+			const uploadResult = await uploadBytes(fileRef, photo)
+		
+
+			restaurantUrl = await getDownloadURL(uploadResult.ref)
+
+			const docRef = doc(db, 'suggestions')
+			await updateDoc(docRef, {
+				restaurantUrl: restaurantUrl
+			})
+		}
+
+		return updateProfile(auth.currentUser, {
+			restaurantUrl
+		})
+	}
+
 	useEffect(() => {
 		const unsubscribe = onAuthStateChanged(auth, async (user) => {
 
@@ -132,6 +154,7 @@ const AuthContextProvider = ({ children }) => {
 		setDisplayNameAndPhoto,
 		setEmail,
 		setPassword,
+		setRestaurantPhoto,
 		userName,
 		userEmail,
 		userPhotoUrl,

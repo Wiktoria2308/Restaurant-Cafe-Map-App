@@ -10,11 +10,13 @@ import GooglePlacesAutocomplete, { geocodeByAddress, getLatLng } from 'react-goo
 import { useState, useEffect } from "react";
 import PhoneInputWithCountry from "react-phone-number-input/react-hook-form"
 import 'react-phone-number-input/style.css'
+import { useAuthContext } from "../contexts/AuthContext";
 
 const SuggestForm = () => {
 
 	const [addressValue, setAddressValue] = useState(null)
 	const [addressError, setAddressError] = useState(null)
+	const [photo, setPhoto] = useState(null)
 
 	const {
 		formState: { errors },
@@ -23,6 +25,20 @@ const SuggestForm = () => {
 		control,
 		reset
 	} = useForm();
+
+	const {setRestaurantPhoto} = useAuthContext()
+
+	const handleFileChange = (e) => {
+		if (!e.target.files.length) {
+			setPhoto(null)
+			return
+		}
+	
+		setImage(e.target.files[0])
+	}
+
+	
+	
 
 	const onCreate = async (data) => {
 
@@ -41,6 +57,10 @@ const SuggestForm = () => {
 		await addDoc(collection(db, "suggestions"), {
 			...data,
 		});
+
+		
+		await setRestaurantPhoto(photo)
+		
 
 		toast.success("Restaurant suggestion added!")
 		setAddressValue(null)
@@ -177,7 +197,12 @@ const SuggestForm = () => {
 							/>
 						</Form.Group>
 
-						<Button type="submit">Submit</Button>
+						<Form.Group id="photo" className="mb-3">
+									<Form.Label>Photo</Form.Label>
+									<Form.Control type="file" onChange={handleFileChange}/>
+						</Form.Group>
+
+						<Button onClick={adminUploadPhoto} type="submit">Submit</Button>
 					</Form>
 				</Card.Body>
 			</Card>
