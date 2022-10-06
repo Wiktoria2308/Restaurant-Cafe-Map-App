@@ -1,155 +1,146 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from "react";
 import {
-	createUserWithEmailAndPassword,
-	sendPasswordResetEmail,
-	signInWithEmailAndPassword,
-	signOut,
-	onAuthStateChanged,
-	updateEmail,
-	updatePassword,
-	updateProfile,
-} from 'firebase/auth'
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore'
-import { ref, getDownloadURL, uploadBytes } from 'firebase/storage'
-import { auth, db, storage } from '../firebase'
-import LoadingSpinner from '../components/LoadingSpinner'
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateEmail,
+  updatePassword,
+  updateProfile,
+} from "firebase/auth";
+import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
+import { auth, db, storage } from "../firebase";
+import LoadingSpinner from "../components/LoadingSpinner";
 
-const AuthContext = createContext()
+const AuthContext = createContext();
 
 const useAuthContext = () => {
-	return useContext(AuthContext)
-}
+  return useContext(AuthContext);
+};
 
 const AuthContextProvider = ({ children }) => {
-	const [currentUser, setCurrentUser] = useState(null)
-	const [userName, setUserName] = useState(null)
-	const [userEmail, setUserEmail] = useState(null)
-	const [userPhotoUrl, setUserPhotoUrl] = useState(null)
-	const [loading, setLoading] = useState(true)
-	const [isAdmin, setIsAdmin] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userName, setUserName] = useState(null);
+  const [userEmail, setUserEmail] = useState(null);
+  const [userPhotoUrl, setUserPhotoUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-	const signup = async (email, password, name, photo) => {
+  const signup = async (email, password, name, photo) => {
+    await createUserWithEmailAndPassword(auth, email, password);
 
-		await createUserWithEmailAndPassword(auth, email, password)
+    const docRef = doc(db, "users", auth.currentUser.uid);
+    await setDoc(docRef, {
+      name,
+      email,
+      photoURL: auth.currentUser.photoURL,
+      isAdmin: false,
+    });
 
-		const docRef = doc(db, 'users', auth.currentUser.uid)
-		await setDoc(docRef, {
-			name,
-			email,
-			photoURL: auth.currentUser.photoURL,
-			isAdmin: false
-		})
+    await setDisplayNameAndPhoto(name, photo);
 
-		await setDisplayNameAndPhoto(name, photo)
+    await reloadUser();
+  };
 
-		await reloadUser()
+  const login = (email, password) => {
+    return signInWithEmailAndPassword(auth, email, password);
+  };
 
-	}
+  const logout = () => {
+    return signOut(auth);
+  };
 
-	const login = (email, password) => {
-		return signInWithEmailAndPassword(auth, email, password)
-	}
+  const reloadUser = async () => {
+    await auth.currentUser.reload();
+    setCurrentUser(auth.currentUser);
+    setUserName(auth.currentUser.displayName);
+    setUserEmail(auth.currentUser.email);
+    setUserPhotoUrl(auth.currentUser.photoURL);
+    return true;
+  };
 
-	const logout = () => {
-		return signOut(auth)
-	}
+  const resetPassword = (email) => {
+    return sendPasswordResetEmail(auth, email);
+  };
 
-	const reloadUser = async () => {
-		await auth.currentUser.reload()
-		setCurrentUser(auth.currentUser)
-		setUserName(auth.currentUser.displayName)
-		setUserEmail(auth.currentUser.email)
-		setUserPhotoUrl(auth.currentUser.photoURL)
-		return true
-	}
+  const setEmail = (email) => {
+    return updateEmail(currentUser, email);
+  };
 
-	const resetPassword = (email) => {
-		return sendPasswordResetEmail(auth, email)
-	}
+  const setPassword = (newPassword) => {
+    return updatePassword(currentUser, newPassword);
+  };
 
-	const setEmail = (email) => {
-		return updateEmail(currentUser, email)
-	}
+  const setDisplayNameAndPhoto = async (displayName, photo) => {
+    let photoURL = auth.currentUser.photoURL;
 
-	const setPassword = (newPassword) => {
-		return updatePassword(currentUser, newPassword)
-	}
+    if (photo) {
+      const fileRef = ref(
+        storage,
+        `profile_photos/${auth.currentUser.email}/${photo.name}`
+      );
 
-	const setDisplayNameAndPhoto = async (displayName, photo) => {
-		let photoURL = auth.currentUser.photoURL
+      const uploadResult = await uploadBytes(fileRef, photo);
 
-		if (photo) {
-			const fileRef = ref(storage, `profile_photos/${auth.currentUser.email}/${photo.name}`)
+      photoURL = await getDownloadURL(uploadResult.ref);
 
-			const uploadResult = await uploadBytes(fileRef, photo)
+      const docRef = doc(db, "users", auth.currentUser.uid);
+      await updateDoc(docRef, {
+        photoURL: photoURL,
+      });
+    }
 
-			photoURL = await getDownloadURL(uploadResult.ref)
+    return updateProfile(auth.currentUser, {
+      displayName,
+      photoURL,
+    });
+  };
 
-			const docRef = doc(db, 'users', auth.currentUser.uid)
-			await updateDoc(docRef, {
-				photoURL: photoURL
-			})
-		}
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
 
-		return updateProfile(auth.currentUser, {
-			displayName,
-			photoURL
-		})
-	}
+      if (user) {
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+        let role = docSnap.data().isAdmin;
+        setIsAdmin(role);
+      } else {
+        setIsAdmin(false);
+      }
 
-	useEffect(() => {
-		const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setUserName(user?.displayName);
+      setUserEmail(user?.email);
+      setUserPhotoUrl(user?.photoURL);
+      setLoading(false);
+    });
 
-			setCurrentUser(user)
+    return unsubscribe;
+  }, []);
 
-			if (user) {
-				const docRef = doc(db, 'users', user.uid)
-				const docSnap = await getDoc(docRef)
-				let role = docSnap.data().isAdmin
-				setIsAdmin(role)
-			} else {
-				setIsAdmin(false)
-			}
+  const contextValues = {
+    currentUser,
+    signup,
+    login,
+    logout,
+    reloadUser,
+    resetPassword,
+    setDisplayNameAndPhoto,
+    setEmail,
+    setPassword,
+    userName,
+    userEmail,
+    userPhotoUrl,
+    isAdmin,
+  };
 
-			setUserName(user?.displayName)
-			setUserEmail(user?.email)
-			setUserPhotoUrl(user?.photoURL)
-			setLoading(false)
+  return (
+    <AuthContext.Provider value={contextValues}>
+      {loading ? <LoadingSpinner /> : children}
+    </AuthContext.Provider>
+  );
+};
 
-		})
-
-		return unsubscribe
-	}, [])
-
-
-	const contextValues = {
-		currentUser,
-		signup,
-		login,
-		logout,
-		reloadUser,
-		resetPassword,
-		setDisplayNameAndPhoto,
-		setEmail,
-		setPassword,
-		userName,
-		userEmail,
-		userPhotoUrl,
-		isAdmin
-	}
-
-	return (
-		<AuthContext.Provider value={contextValues}>
-			{loading ? (
-				<LoadingSpinner />
-			) : (
-				children
-			)}
-		</AuthContext.Provider>
-	)
-}
-
-export {
-	AuthContextProvider as default,
-	useAuthContext,
-}
+export { AuthContextProvider as default, useAuthContext };

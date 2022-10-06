@@ -1,10 +1,10 @@
-import {useState, useEffect} from 'react';
+import { useState, useEffect } from "react";
 
 const usePosition = () => {
   const [position, setPosition] = useState({});
   const [error, setError] = useState(null);
 
-  const onChange = ({coords}) => {
+  const onChange = ({ coords }) => {
     setPosition({
       latitude: coords.latitude,
       longitude: coords.longitude,
@@ -16,13 +16,13 @@ const usePosition = () => {
   useEffect(() => {
     const geo = navigator.geolocation;
     if (!geo) {
-      setError('Geolocation is not supported');
+      setError("Geolocation is not supported");
       return;
     }
     const watcher = geo.watchPosition(onChange, onError);
     return () => geo.clearWatch(watcher);
   }, []);
-  return {...position, error};
-}
+  return { ...position, error };
+};
 
-export default usePosition
+export default usePosition;
