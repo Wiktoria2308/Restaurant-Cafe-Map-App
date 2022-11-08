@@ -67,7 +67,7 @@ const CreateRestaurantForm = () => {
 						<Form.Group controlId="geolocation" className="mb-3">
 							<Form.Label>Search address</Form.Label>
 							<GooglePlacesAutocomplete
-								apiKey="AIzaSyABc1lvmKQckaroC5FaiEu3tjvT9hASqsQ"
+								apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
 								selectProps={{
 									placeholder: 'Search address',
 									name: "address",
