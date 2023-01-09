@@ -27,7 +27,7 @@ const Map = ({ restaurants }) => {
 
 	const containerStyle = {
 		width: "100%",
-		height: "600px",
+		height: "100vh",
 	};
 
 	const onSearchLoad = (ref) => setSearchBox(ref);
