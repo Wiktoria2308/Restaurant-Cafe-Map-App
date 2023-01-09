@@ -46,7 +46,7 @@ const Map = ({ restaurants }) => {
 	locationButton.classList.add("custom-map-control-button");
 
 	const handleMapOnLoad = (map) => {
-		map.controls[google.maps.ControlPosition.BOTTOM].push(locationButton);
+		map.controls[google.maps.ControlPosition.TOP].push(locationButton);
 	};
 
 	locationButton.addEventListener("click", () => {

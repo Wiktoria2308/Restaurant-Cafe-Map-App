@@ -19,15 +19,15 @@ body {
 }
 
 .custom-map-control-button {
+	top:10px !important;
 	background-color: #fff;
 	border: 0;
 	border-radius: 2px;
 	box-shadow: 0 1px 4px -1px rgba(0, 0, 0, 0.3);
-	margin-bottom: 25px;
 	padding: 0 0.5em;
-	font: 400 18px Roboto, Arial, sans-serif;
+	font-size: 15px;
 	overflow: hidden;
-	height: 40px;
+	height: 30px;
 	cursor: pointer;
 }
 
@@ -47,8 +47,8 @@ body {
 	outline: none;
 	text-overflow: ellipses;
 	position: absolute;
-	top: 5px;
-	right: 140px;
+	top: 60px;
+    right: 10px;
 }
 
 .restaurant-info-window {
